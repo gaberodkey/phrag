@@ -15,10 +15,10 @@ library(dplyr)
 library(ggplot2)
 
 #Includes overall propagule pressure estimates and all measurements used in calculation for sampled land parcels
-prpgl_prsr <- read_csv("~/Library/Mobile Documents/com~apple~CloudDocs/Phrag Shared Workspace/prpgl_prsr.csv")
+prpgl_prsr <- read_csv("~/Library/prpgl_prsr.csv")
 
 #Includes percent P. australis cover and additional details such as ownership and treatment for all land parcels in the marsh
-all_club_cover <- read_csv("~/Library/Mobile Documents/com~apple~CloudDocs/Phrag Shared Workspace/all_club_cover.csv")
+all_club_cover <- read_csv("~/Library/all_club_cover.csv")
 
 #Keeping only the useful columns
 phrag <- prpgl_prsr %>%
