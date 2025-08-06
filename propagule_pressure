@@ -1,6 +1,6 @@
-#Two-sample t tests and graphs in RStudio for long- (≥9 yrs) and short-term (≤3 yrs) herbicide treatment comparing: 
+#Two-sample t tests and graphs in RStudio for high- (≥9 yrs) and low-intensity (≤3 yrs) herbicide treatment comparing: 
 # overall propagule pressure of P. australis (seeds/m^2 of marshland),
-# seed production per area of P. austrlais  (seeds/m^2 of P. australis),
+# seed production per area of P. australis  (seeds/m^2 of P. australis),
 # % phragmites area,
 # inflorescence density (stems/m^2),
 # inflorescence size (g and seeds/inflorescence),
@@ -15,20 +15,15 @@ library(dplyr)
 library(ggplot2)
 
 #Includes overall propagule pressure estimates and all measurements used in calculation for sampled land parcels
-prpgl_prsr <- read_csv("~/Library/prpgl_prsr.csv")
+prpgl_prsr <- read_csv("~/Library/Mobile Documents/com~apple~CloudDocs/Phrag Shared Workspace/prpgl_prsr.csv")
 
-#Includes percent P. australis cover and additional details such as ownership and treatment for all land parcels in the marsh
-all_club_cover <- read_csv("~/Library/all_club_cover.csv")
-
-#Keeping only the useful columns
 phrag <- prpgl_prsr %>%
   select(c(unit, site, patch_num, flr_strp, trmt, seeds_mean, spk_flr, seed_flr, mean_flr_dns_m2, prop_prsr_m2, germ_rate, yrs_spraying, phrag_marsh, prop_prsr_marsh))
 
-#Classifying all of the clubs with P. australis by years of treatment
-all_club_cover <- all_club_cover %>%
-  mutate(trmt = ifelse(trmt_yrs >= 9, "9-21 years (Long-term)", 
-                       ifelse(trmt_yrs >= 4 & trmt_yrs <= 8, "4-8 years",
-                       ifelse(trmt_yrs <= 3, "0-3 years (Short-term)", NA))))
+#Includes percent P. australis cover and additional details such as ownership and treatment for all land parcels in the marsh
+all_club_cover <- read_csv("~/Library/Mobile Documents/com~apple~CloudDocs/Phrag Shared Workspace/all_club_cover.csv")
+
+all_club_cover_filt <- all_club_cover %>% filter(trmt_yrs <= 3 | trmt_yrs >= 9)
 
 ##### OVERALL PROPAGULE PRESSURE #####
 ##### (seeds/m^2 of marsh) #####
@@ -36,13 +31,13 @@ all_club_cover <- all_club_cover %>%
 #2-sample t-test:
 t.test(data = phrag, prop_prsr_marsh ~ trmt)
 
-#Summary table of overall propagule pressure in Long- and Short-term treatments:
+#Summary table of overall propagule pressure in high- and low-term intensity:
 ppxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(prop_prsr_marsh),
                              funs(count = sum(!is.na(prop_prsr_marsh)), meanpp = mean(prop_prsr_marsh,na.rm=T),
                                   sdpp = sd(prop_prsr_marsh, na.rm=T), sepp = sdpp/sqrt(count)))
 
-#Bar plot visual of overall propagule pressure in Long- and Short-term treatments:
-ggplot(ppxtrmt_summ, aes(fill = trmt, x = trmt, y = meanpp)) +
+#Bar plot visual of overall propagule pressure in high- and low-intensity treatments:
+ggplot(ppxtrmt_summ, aes(fill = trmt, x = reorder(trmt, -meanpp), y = meanpp)) +
   geom_col(color = "black", show.legend = FALSE, width = 0.5) +
   geom_errorbar(aes(x = trmt, ymin = meanpp - sepp, ymax = meanpp + sepp), width = 0.1) +
   theme_classic() +
@@ -55,7 +50,7 @@ ggplot(ppxtrmt_summ, aes(fill = trmt, x = trmt, y = meanpp)) +
 
 #Summary table of propagule pressure in each land parcel sampled:
 ppxsite_summ <- summarise_at(group_by(phrag, unit, yrs_spraying, trmt), vars(prop_prsr_marsh),
-                       funs(count = sum(!is.na(logpp)), meanpp = mean(prop_prsr_marsh,na.rm = T), sdpp = sd(prop_prsr_marsh, na.rm=T), sepp = sdpp/sqrt(count)))
+                       funs(count = sum(!is.na(prop_prsr_marsh)), meanpp = mean(prop_prsr_marsh,na.rm = T), sdpp = sd(prop_prsr_marsh, na.rm=T), sepp = sdpp/sqrt(count)))
 
 #Bar plot of overall propagule pressure in each land parcel sampled:
 ggplot(ppxsite_summ, aes(fill = trmt, (x = reorder(unit, -meanpp)), y = meanpp)) +
@@ -78,7 +73,7 @@ ggplot(ppxsite_summ, aes(fill = trmt, (x = reorder(unit, -meanpp)), y = meanpp))
 #2-sample t-test:
 t.test(data = phrag, prop_prsr_m2 ~ trmt)
 
-#Summary table of seed production in Long- and Short-term treatments:
+#Summary table of seed production in high- and low-intensity treatments:
 spxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(prop_prsr_m2),
                              funs(count = sum(!is.na(prop_prsr_m2)), meansp = mean(prop_prsr_m2,na.rm=T),
                                   sdsp = sd(prop_prsr_m2, na.rm=T), sesp = sdsp/sqrt(count)))
@@ -97,7 +92,7 @@ ggplot(spxtrmt_summ, aes(fill = trmt, x = trmt, y = meansp)) +
 
 #Summary table of seed production in each site sampled:
 spxsite_summ <- summarise_at(group_by(phrag, site, yrs_spraying, trmt), vars(prop_prsr_m2),
-                          funs(count = sum(!is.na(logppp)), meanppp = mean(prop_prsr_m2,na.rm = T), sdppp = sd(prop_prsr_m2, na.rm=T), seppp = (sdppp/sqrt(count))))
+                          funs(count = sum(!is.na(prop_prsr_m2)), meanppp = mean(prop_prsr_m2,na.rm = T), sdppp = sd(prop_prsr_m2, na.rm=T), seppp = (sdppp/sqrt(count))))
 
 #Bar plot of seed production in each site sampled:
 ggplot(spxsite_summ, aes(fill = trmt, (x = reorder(site, -meanppp)), y = meanppp)) +
@@ -128,20 +123,21 @@ phrag_unique <- phrag %>%
 t.test(data = phrag_unique, phrag_marsh ~ trmt)
 
 #2-sample t-test (ALL LAND PARCELS)
-t.test(data = all_club_cover, cover ~ trmt)
+t.test(data = all_club_cover_filt, cover ~ trmt_class)
 
-#Summary table of P. australis cover in Long- and Short-term treatments (SAMPLED LAND PARCELS):
+#Summary table of P. australis cover in high- and low-intensity treatments (SAMPLED LAND PARCELS):
 phragarea_summ1 <- summarise_at(group_by(phrag, trmt), vars(phrag_marsh),
                             funs(count = sum(!is.na(phrag_marsh)), meanphragmarsh = mean(phrag_marsh,na.rm=T),
                                  sdphragmarsh = sd(phrag_marsh, na.rm=T), sephragmarsh = sdphragmarsh/sqrt(count)))
 
-#Summary table of P. australis cover in Long-, Short-, and Medium-term treatments (ALL LAND PARCELS):
-phragarea_summ2 <- summarise_at(group_by(all_club_cover, trmt), vars(cover),
+#Summary table of P. australis cover in high- and low-intensith treatments (ALL LAND PARCELS):
+phragarea_summ2 <- summarise_at(group_by(all_club_cover_filt, trmt_class), vars(cover),
                                 funs(count = sum(!is.na(cover)), meancover = mean(cover,na.rm=T),
                                      sdcover = sd(cover, na.rm=T), secover = sdcover/sqrt(count)))
 
-#Bar plot of P. australis area in Long- and Short-term treatments(SAMPLED LAND PARCELS):
-ggplot(phragarea_summ1, aes(fill = trmt, x = trmt, y = meanphragmarsh)) +
+
+#Bar plot of P. australis area in high- and low-intensity treatments(SAMPLED LAND PARCELS):
+ggplot(phragarea_summ1, aes(fill = trmt, (x = reorder(trmt, -meanphragmarsh)), y = meanphragmarsh)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meanphragmarsh - sephragmarsh, ymax = meanphragmarsh + sephragmarsh), width = 0.1) +
   theme_classic() +
@@ -151,14 +147,14 @@ ggplot(phragarea_summ1, aes(fill = trmt, x = trmt, y = meanphragmarsh)) +
   theme(axis.text = element_text(size = 15)) +
   theme(axis.title = element_text(size = 15))
 
-#Bar plot of P. australis area in Long- and Short-term treatments (ALL LAND PARCELS):
-ggplot(phragarea_summ2, aes(fill = trmt, (x = reorder(trmt, -meancover)), y = meancover)) +
+#Bar plot of P. australis area in high- and low-intensity treatments (ALL LAND PARCELS):
+ggplot(phragarea_summ2, aes(fill = trmt_class, (x = reorder(trmt_class, -meancover)), y = meancover)) +
   geom_col(color = "black", show.legend = F, width = .5) +
-  geom_errorbar(aes(x = trmt, ymin = meancover - secover, ymax = meancover + secover), width = 0.1) +
+  geom_errorbar(aes(x = trmt_class, ymin = meancover - secover, ymax = meancover + secover), width = 0.1) +
   theme_classic() +
-  scale_fill_manual(values = c("white", "white", "white")) +
-  ylab(expression(paste("Mean", italic(" P. australis"), " cover per area of marsh ", (m^2)))) +
-  xlab("Years of Herbicide Treatment") +
+  scale_fill_manual(values = c("grey", "white")) +
+  ylab(expression(paste("Mean %", italic(" P. australis"), " cover per area of marsh ")))+
+  xlab("Herbicide Treatment") +
   theme(axis.text = element_text(size = 15)) +
   theme(axis.title = element_text(size = 15))
 
@@ -169,12 +165,12 @@ ggplot(phragarea_summ2, aes(fill = trmt, (x = reorder(trmt, -meancover)), y = me
 #2-sample t-test:
 t.test(data = phrag, mean_flr_dns_m2 ~ trmt)
 
-#Summary table of inflorescence density in Long- and Short-term treatments:
+#Summary table of inflorescence density in high- and low-intensity treatments:
 flrdnsxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(mean_flr_dns_m2),
                         funs(count = sum(!is.na(mean_flr_dns_m2)), meandns = mean(mean_flr_dns_m2,na.rm=T),
                              sddns = sd(mean_flr_dns_m2, na.rm=T), sedns = sddns/sqrt(count)))
 
-#Bar plot of inflorescence density in Long- and Short-term treatments:
+#Bar plot of inflorescence density in high- and low-intensity treatments:
 ggplot(flrdnsxtrmt_summ, aes(fill = trmt, x = trmt, y = meandns)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meandns - sedns, ymax = meandns + sedns), width = 0.1) +
@@ -210,12 +206,12 @@ ggplot(flrdnsxsite_summ, aes(fill = trmt, (x = reorder(site, -meanflr)), y = mea
 #2-sample t-test:
 t.test(data = phrag, seed_flr ~ trmt)
 
-#Summary table of seeds per inflorescence in Long- and Short-term treatments:
+#Summary table of seeds per inflorescence in high- and low-intensity treatments:
 sdflrxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(seed_flr),
                       funs(count = sum(!is.na(seed_flr)), meanseedflr = mean(seed_flr,na.rm=T),
                            sdseedflr = sd(seed_flr, na.rm=T), seseedflr = sdseedflr/sqrt(count)))
 
-#Bar plot of seeds per inflorescence in Long- and Short-term treatments:
+#Bar plot of seeds per inflorescence in high- and low-intensity treatments:
 ggplot(sdflrxtrmt_summ, aes(fill = trmt, x = trmt, y = meanseedflr)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meanseedflr - seseedflr, ymax = meanseedflr + seseedflr), width = 0.1) +
@@ -227,11 +223,11 @@ ggplot(sdflrxtrmt_summ, aes(fill = trmt, x = trmt, y = meanseedflr)) +
   theme(axis.text = element_text(size = 15)) +
   theme(axis.title = element_text(size = 15))
 
-#Summary table of seeds per inflorescence in Long- and Short-term treatments:
+#Summary table of seeds per inflorescence in high- and low-intensity treatments:
 sdflrxsite_summ <- summarise_at(group_by(phrag, site, yrs_spraying, trmt), vars(seed_flr),
                          funs(count = sum(!is.na(seed_flr)), meanseedsflr = mean(seed_flr,na.rm = T), sdseedsflr = sd(seed_flr, na.rm=T), seseedsflr = sdseedsflr/sqrt(count)))
 
-#Bar plot of seeds per inflorescence in Long- and Short-term treatments:
+#Bar plot of seeds per inflorescence in high- and low-intensity treatments:
 ggplot(sdflrxsite_summ, aes(fill = trmt, (x = reorder(site, -meanseedsflr)), y = meanseedsflr)) +
   geom_col(color = "black") +
   geom_errorbar(aes(x = site, ymin = meanseedsflr - seseedsflr, ymax = meanseedsflr + seseedsflr), width = 0.2) +
@@ -252,12 +248,12 @@ ggplot(sdflrxsite_summ, aes(fill = trmt, (x = reorder(site, -meanseedsflr)), y =
 #2-sample t-test:
 t.test(data = phrag, flr_strp ~ trmt)
 
-#Summary table of inflorescence weight in Long- and Short-term treatments:
+#Summary table of inflorescence weight in high- and low-intensity treatments:
 wtxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(flr_strp),
                         funs(count = sum(!is.na(flr_strp)), meanwt = mean(flr_strp,na.rm=T),
                              sdwt = sd(flr_strp, na.rm=T), sewt = sdwt/sqrt(count)))
 
-#Bar plot of inflorescence weight in Long- and Short-term treatments:
+#Bar plot of inflorescence weight in high- and low-intensity treatments:
 ggplot(wtxtrmt_summ, aes(fill = trmt, x = trmt, y = meanwt)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meanwt - sewt, ymax = meanwt + sewt), width = 0.1) +
@@ -293,12 +289,12 @@ ggplot(wtxsite_summ, aes(fill = trmt, (x = reorder(site, -meanflrwt)), y = meanf
 #2-sample t-test:
 t.test(data = phrag, seeds_mean ~ trmt)
 
-#Summary table of seeds per spikelet in Long- and Short-term treatments:
+#Summary table of seeds per spikelet in high- and low-intensity treatments:
 sdspkxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(seeds_mean),
                                 funs(count = sum(!is.na(seeds_mean)), meanseeds = mean(seeds_mean,na.rm=T),
                                      sdseeds = sd(seeds_mean, na.rm=T), seseeds = sdseeds/sqrt(count/5)))
 
-#Bar plot of seeds per spikelet in Long- and Short-term treatments:
+#Bar plot of seeds per spikelet in high- and low-intensity treatments:
 ggplot(sdspkxtrmt_summ, aes(fill = trmt, x = trmt, y = meanseeds)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meanseeds - seseeds, ymax = meanseeds + seseeds), width = 0.1) +
@@ -334,13 +330,13 @@ ggplot(sdspkxsite_summ, aes(fill = trmt, (x = reorder(site, -meanseed)), y = mea
 #2-sample t-test:
 t.test(data = phrag, germ_rate ~ trmt)
 
-#Summary table of germination rate in Long- and Short-term treatments:
+#Summary table of germination rate in high- and low-intensity treatments:
 germxtrmt_summ <- summarise_at(group_by(phrag, trmt), vars(germ_rate),
                         funs(count = sum(!is.na(germ_rate)), meangerm = mean(germ_rate,na.rm=T),
                              sdgerm = sd(germ_rate, na.rm=T), segerm = sdgerm/sqrt(count)))
 
-#Bar plot of germination rate in Long- and Short-term treatments:
-ggplot(germxtrmt_summ, aes(fill = trmt, x = trmt, y = meangerm)) +
+#Bar plot of germination rate in high- and low-intensity treatments:
+ggplot(germxtrmt_summ, aes(fill = trmt, x = reorder(trmt, meangerm), y = meangerm)) +
   geom_col(color = "black", show.legend = F, width = .5) +
   geom_errorbar(aes(x = trmt, ymin = meangerm - segerm, ymax = meangerm + segerm), width = 0.1) +
   theme_classic() +
@@ -367,4 +363,38 @@ ggplot(germxsite_summ, aes(fill = trmt, (x = reorder(site, -meangerm2)), y = mea
   theme(axis.title = element_text(size = 15)) +
   theme(legend.title = element_text(face = "bold", size = 15)) +
   theme(legend.text = element_text(face = "bold", size = 15)) 
+
+
+
+###############################
+  
+
+ggplot(all_club_cover, aes(x = trmt_yrs, y = cover)) +
+  geom_point(size = 2, shape = 23) +
+  theme_classic() +
+  ylab(expression(paste("%", italic(" P. australis"), " cover per ", m^2, " of marsh"))) +
+  xlab("Years of herbicide treatment") +
+  geom_smooth(method = lm, se = F, fullrange = FALSE, level = 0.95) +
+  theme(axis.text = element_text(size = 12)) +
+  theme(axis.title = element_text(face = "bold", size = 12)) +
+  theme(legend.title = element_text(face = "bold", size = 15)) +
+  theme(legend.text = element_text(face = "bold", size = 15)) 
+
+
+all_club_cover <- mutate(all_club_cover, tidal_ratio = (te_l_m/area))
+all_club_cover <- mutate(all_club_cover, sqrt_tr = sqrt(tidal_ratio))
+
+ggplot(all_club_cover, aes(x = tidal_ratio, y = cover)) +
+  geom_point(size = 2, shape = 23) +
+  theme_classic() +
+  ylab(expression(paste("%", italic(" P. australis"), " cover"))) +
+  xlab("Tidal perimeter ratio") +
+  #geom_smooth(method = lm, se = F, fullrange = FALSE, level = 0.95) +
+  theme(axis.text = element_text(size = 12)) +
+  theme(axis.title = element_text(face = "bold", size = 12)) +
+  theme(legend.title = element_text(face = "bold", size = 15)) +
+  theme(legend.text = element_text(face = "bold", size = 15)) 
+ 
+model <- glm(trmt_yrs ~ cover, data = all_club_cover)
+summary(model)
 
