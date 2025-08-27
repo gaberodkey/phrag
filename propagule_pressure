@@ -365,36 +365,3 @@ ggplot(germxsite_summ, aes(fill = trmt, (x = reorder(site, -meangerm2)), y = mea
   theme(legend.text = element_text(face = "bold", size = 15)) 
 
 
-
-###############################
-  
-
-ggplot(all_club_cover, aes(x = trmt_yrs, y = cover)) +
-  geom_point(size = 2, shape = 23) +
-  theme_classic() +
-  ylab(expression(paste("%", italic(" P. australis"), " cover per ", m^2, " of marsh"))) +
-  xlab("Years of herbicide treatment") +
-  geom_smooth(method = lm, se = F, fullrange = FALSE, level = 0.95) +
-  theme(axis.text = element_text(size = 12)) +
-  theme(axis.title = element_text(face = "bold", size = 12)) +
-  theme(legend.title = element_text(face = "bold", size = 15)) +
-  theme(legend.text = element_text(face = "bold", size = 15)) 
-
-
-all_club_cover <- mutate(all_club_cover, tidal_ratio = (te_l_m/area))
-all_club_cover <- mutate(all_club_cover, sqrt_tr = sqrt(tidal_ratio))
-
-ggplot(all_club_cover, aes(x = tidal_ratio, y = cover)) +
-  geom_point(size = 2, shape = 23) +
-  theme_classic() +
-  ylab(expression(paste("%", italic(" P. australis"), " cover"))) +
-  xlab("Tidal perimeter ratio") +
-  #geom_smooth(method = lm, se = F, fullrange = FALSE, level = 0.95) +
-  theme(axis.text = element_text(size = 12)) +
-  theme(axis.title = element_text(face = "bold", size = 12)) +
-  theme(legend.title = element_text(face = "bold", size = 15)) +
-  theme(legend.text = element_text(face = "bold", size = 15)) 
- 
-model <- glm(trmt_yrs ~ cover, data = all_club_cover)
-summary(model)
-
